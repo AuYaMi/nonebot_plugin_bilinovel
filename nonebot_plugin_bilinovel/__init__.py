@@ -1,4 +1,9 @@
+from nonebot import require
 from nonebot.plugin import PluginMetadata
+
+require("nonebot_plugin_htmlrender")
+
+from .config import Config
 from . import novel
 
 __plugin_meta__ = PluginMetadata(
@@ -8,4 +13,5 @@ __plugin_meta__ = PluginMetadata(
     type="application",
     homepage="https://github.com/AuYaMi/nonebot_plugin_bilinovel",
     supported_adapters={"~onebot.v11"},
+    config=Config,
 )

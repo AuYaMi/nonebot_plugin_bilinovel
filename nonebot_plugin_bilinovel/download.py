@@ -7,8 +7,8 @@ import re
 from lxml import etree
 from .search import getbook_html
 from . import config
-from playwright.async_api import async_playwright
-from loguru import logger
+from nonebot.log import logger
+from nonebot_plugin_htmlrender import get_default_application
 from urllib.parse import urljoin
 from ebooklib import epub
 
@@ -46,6 +46,9 @@ async def get_filtered_text(page, url, load_image: bool = False):
     if "Sorry, you have been blocked" in page_html:
         logger.error(" 当前IP触发Cloudflare封禁！任务终止")
         raise Exception("CLOUDFLARE_BLOCKED")
+    if "内容加载失败" in page_html or "请刷新或更换浏览器" in page_html:
+        logger.warning(" 页面触发反爬检测，内容被替换为假文本")
+        raise Exception("ANTI_BOT_DETECTED")
     await page.wait_for_selector('//div[@class="TextContent"]', timeout=25000, state="visible")
     await remove_ad_popup(page)
     # 只有EPUB插图模式才执行滚动+延时
@@ -259,22 +262,8 @@ async def worker_txt(worker_id: int, save_path: str, file_lock: asyncio.Lock):
     init_delay = worker_id * 5.0
     logger.info(f"工人{worker_id}，等待 {init_delay}s 后开始工作")
     await asyncio.sleep(init_delay)
-    async with async_playwright() as p:
-        headless_flag = config.get_browser_headless()
-        if headless_flag:
-            launch_args = {
-                "headless": headless_flag,
-                "channel": "chrome",
-                "args": ["--no-sandbox", "--disable-gpu"]
-            }
-        else:
-            launch_args = {
-                "headless": False,
-                "channel": "chrome",
-                "args": ["--start-maximized"]
-            }
-        browser = await p.chromium.launch(**launch_args)
-
+    playwright = get_default_application().extensions.playwright
+    async with playwright.browser() as browser:
         context = await browser.new_context(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
             viewport={"width": 1280, "height": 720}
@@ -303,7 +292,7 @@ async def worker_txt(worker_id: int, save_path: str, file_lock: asyncio.Lock):
             finally:
                 await page.close()
             await asyncio.sleep(random.uniform(2.0, 3.0))
-        await browser.close()
+        await context.close()
     logger.info(f"✅工人{worker_id}退出")
 
 
@@ -312,23 +301,8 @@ async def worker_epub(worker_id: int, file_lock: asyncio.Lock):
     init_delay = worker_id * 4.0
     logger.info(f"工人{worker_id}，等待 {init_delay}s 后启动")
     await asyncio.sleep(init_delay)
-    async with async_playwright() as p:
-        headless_flag = config.get_browser_headless()
-        if headless_flag:
-            launch_args = {
-                "headless": headless_flag,
-                "channel": "chrome",
-                "args": ["--no-sandbox", "--disable-gpu"]
-            }
-        else:
-            launch_args = {
-                "headless": False,
-                "channel": "chrome",
-                "args": ["--start-maximized"]
-            }
-
-
-        browser = await p.chromium.launch(**launch_args)
+    playwright = get_default_application().extensions.playwright
+    async with playwright.browser() as browser:
         context = await browser.new_context(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
             viewport={"width": 1280, "height": 720}
@@ -359,7 +333,7 @@ async def worker_epub(worker_id: int, file_lock: asyncio.Lock):
             finally:
                 await page.close()
             await asyncio.sleep(random.uniform(2, 3))
-        await browser.close()
+        await context.close()
     logger.info(f"✅工人{worker_id}浏览器退出")
 
 

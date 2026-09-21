@@ -1,40 +1,35 @@
 import asyncio
 import random
 from pathlib import Path
-from nonebot import get_driver
+
+from nonebot import get_driver, get_plugin_config
+from pydantic import BaseModel
+
+
+class Config(BaseModel):
+    """哔哩轻小说插件配置项"""
+
+    bilinovel_worker_count: int = 2
+    bilinovel_sear_priority: int = 4
+    bilinovel_down_priority: int = 5
+
+
+plugin_config = get_plugin_config(Config)
+
 
 driver = get_driver()
 
 ROOT = Path(__file__).parent.parent
-env_file_path = ROOT / ".env"
-
-# 手动解析 .env 文件，自己读取键值对
-env_config = {}
-if env_file_path.exists():
-    with open(env_file_path, "r", encoding="utf‑8") as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue
-            key, value = line.split("=", 1)
-            env_config[key.strip()] = value.strip()
-
-
-task_queue: asyncio.Queue = asyncio.Queue(maxsize=30)
-END_SENTINEL = None
 OUTPUT_FOLDER = ROOT / "shared_output"
 OUTPUT_FOLDER.mkdir(exist_ok=True)
 BASE_URL = "https://w.linovelib.com"
 
+task_queue: asyncio.Queue = asyncio.Queue(maxsize=30)
+END_SENTINEL = None
+
 
 def get_worker_count() -> int:
-    val = env_config.get("WORKER_COUNT", "2")
-    return int(val)
-
-
-def get_browser_headless() -> bool:
-    val = env_config.get("BROWSER_HEADLESS", "True").strip().lower()
-    return val in ("true", "1", "yes", "on")
+    return plugin_config.bilinovel_worker_count
 
 
 def get_temp_json_path() -> Path:
@@ -44,13 +39,10 @@ def get_temp_json_path() -> Path:
 @driver.on_startup
 def print_config_info():
     w = get_worker_count()
-    h = get_browser_headless()
     t = get_temp_json_path()
     print("✅ 插件配置加载完成")
-    print(f"  BROWSER_HEADLESS = {h}, type:{type(h)}")
-    print(f"  WORKER_COUNT      = {w}")
-    print(f"  TEMP_JSON_PATH    = {t}")
-
+    print(f"  BILINOVEL_WORKER_COUNT = {w}")
+    print(f"  TEMP_JSON_PATH         = {t}")
 
 
 USER_AGENTS = [
@@ -78,6 +70,7 @@ USER_AGENTS = [
 ]
 
 COOKIE_STR = "_ga=GA1.2.373713668.1646927652; _gid=GA1.2.1447053390.1651231171; Hm_lpvt_d29ecd95ff28d58324c09b9dc0bee919=1651231349; Hm_lvt_d29ecd95ff28d58324c09b9dc0bee919=1649823562,1651231165; jieqiUserInfo=jieqiUserId%3D627182%2CjieqiUserUname%3Dfangxx3863%2CjieqiUserName%3Dfangxx3863%2CjieqiUserGroup%3D3%2CjieqiUserGroupName%3D%E6%99%AE%E9%80%9A%E4%BC%9A%E5%91%98%2CjieqiUserVip%3D0%2CjieqiUserHonorId%3D1%2CjieqiUserHonor%3D%E5%A4%A9%E7%84%B6%2CjieqiUserToken%3D8ea5ef793d94938673124b15cb3a7102%2CjieqiCodeLogin%3D0%2CjieqiCodePost%3D0%2CjieqiUserPassword%3D5c82b131f01843ca05e751717d74a992%2CjieqiUserLogin%3D1651231169; jieqiVisitId=article_articleviews%3D2939; jieqiVisitInfo=jieqiUserLogin%3D1651231169%2CjieqiUserId%3D627182; night=0; PHPSESSID=bsdrsrdj916v5etol006ji2odl"
+
 
 def get_random_headers() -> dict:
     """每次调用生成一份全新随机UA的请求头"""

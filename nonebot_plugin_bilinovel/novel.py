@@ -2,9 +2,10 @@ from nonebot import on_command
 from nonebot.params import CommandArg
 from nonebot.adapters.onebot.v11 import Bot, MessageEvent, Message, GroupMessageEvent, PrivateMessageEvent
 import asyncio
-from .config import*
+from pathlib import Path
 from .download import download_volume
 from .search import search_book
+from .config import plugin_config
 
 # 全局信号量：同一时刻只允许1个下载任务
 GLOBAL_SEM = asyncio.Semaphore(1)
@@ -18,7 +19,7 @@ async def send_notice(bot: Bot, target_id: int, is_group: bool, text: str):
         await bot.send_private_msg(user_id=target_id, message=text)
 
 
-down = on_command("down", priority=5, block=True)
+down = on_command("down", priority=plugin_config.bilinovel_down_priority, block=True)
 
 
 @down.handle()
@@ -89,7 +90,7 @@ async def down_handler(bot: Bot, event: MessageEvent, arg: Message = CommandArg(
     asyncio.create_task(background_task(bot, target_id, is_group, book_id, vol, run_mode))
 
 
-sear = on_command("sear", priority=4, block=True)
+sear = on_command("sear", priority=plugin_config.bilinovel_sear_priority, block=True)
 
 
 @sear.handle()

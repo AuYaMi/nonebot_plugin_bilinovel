@@ -9,11 +9,21 @@
 pip install nonebot-plugin-bilinovel
 ```
 
-### 安装 Playwright 浏览器内核
+### 浏览器内核
 
-```bash
-playwright install chromium
+浏览器由 `nonebot-plugin-htmlrender` 统一管理，缺失时会在启动阶段自动安装；如需指定本地 Chrome（推荐，可修复部分站点的反爬检测），在 `.env` 中配置：
+
+```dotenv
+RENDER__PROVIDER=playwright
+RENDER__PROVIDER_CONFIG__EXECUTABLE_PATH=C:/Program Files/Google/Chrome/Application/chrome.exe
 ```
+
+> ⚠️ **请将 `EXECUTABLE_PATH` 替换为你本机 Chrome 的实际安装路径，否则插件无法启动！**
+>
+> 常见路径参考：
+> - Windows: `C:/Program Files/Google/Chrome/Application/chrome.exe`
+> - macOS: `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`
+> - Linux: `/usr/bin/google-chrome`
 
 ## 🎯 使用命令
 
@@ -60,12 +70,27 @@ playwright install chromium
 可调整参数列表：
 
 ```
-# Playwright浏览器无头开关，True：无头 /False：有头
-BROWSER_HEADLESS = True
 # 章节并发数，并发多容易限流
-WORKER_COUNT = 2
+BILINOVEL_WORKER_COUNT = 2
+
+# 事件响应器优先级（数字越小优先级越高）
+BILINOVEL_SEAR_PRIORITY = 4
+BILINOVEL_DOWN_PRIORITY = 5
 ```
 
+浏览器由 `nonebot-plugin-htmlrender` 提供的共享实例驱动（配置项前缀 `render`），按需覆盖，例如指定本地 Chrome：
+
+```dotenv
+RENDER__PROVIDER=playwright
+RENDER__PROVIDER_CONFIG__EXECUTABLE_PATH=C:/Program Files/Google/Chrome/Application/chrome.exe
+```
+
+> ⚠️ **请将 `EXECUTABLE_PATH` 替换为你本机 Chrome 的实际安装路径，否则插件无法启动！**
+>
+> 常见路径参考：
+> - Windows: `C:/Program Files/Google/Chrome/Application/chrome.exe`
+> - macOS: `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`
+> - Linux: `/usr/bin/google-chrome`
 
 ## ⚠️ 使用须知
 
@@ -78,6 +103,14 @@ WORKER_COUNT = 2
 生成的 EPUB 文件将会保存至插件运行目录下。
 
 ## 📝 更新日志
+
+### v0.1.5
+
+- 迁移到 `nonebot-plugin-htmlrender` 共享浏览器实例，不再自行创建浏览器
+- 依赖版本全部添加 `>=x,<y` 范围限制
+- 配置类改为 NoneBot 标准 `Config` + `get_plugin_config`，配置项使用 `BILINOVEL_` 前缀
+- logger 统一使用 `nonebot.log`，移除 loguru 依赖
+- 新增反爬检测：识别网站返回的假内容并触发重试
 
 ### v0.1.4
 
