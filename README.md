@@ -104,6 +104,10 @@ RENDER__PROVIDER_CONFIG__EXECUTABLE_PATH=C:/Program Files/Google/Chrome/Applicat
 
 ## 📝 更新日志
 
+### v0.1.6
+
+- 事件响应器优先级改为可配置（`BILINOVEL_SEAR_PRIORITY`、`BILINOVEL_DOWN_PRIORITY`）
+
 ### v0.1.5
 
 - 迁移到 `nonebot-plugin-htmlrender` 共享浏览器实例，不再自行创建浏览器

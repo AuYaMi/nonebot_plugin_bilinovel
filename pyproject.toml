@@ -1,6 +1,6 @@
 [project]
 name = "nonebot-plugin-bilinovel"
-version = "0.1.5"
+version = "0.1.6"
 authors = [
     { name = "AuYaMi", email = "SIX18318463527@163.com" }
 ]
